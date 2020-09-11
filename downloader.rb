@@ -60,16 +60,21 @@ def download_chart(chart_number:, title:)
 
   file_uri = URI.parse(File.join(PDF_PREFIX, remote_name))
 
-  http_code = HTTParty.head(file_uri).code.to_i
+  head = HTTParty.head(file_uri)
+  http_code = head.code.to_i
+  http_length = head.content_length
 
   if http_code >= 300
     log("skipping #{saved_name} due to remote error : #{http_code}")
     return
   end
 
-  if File.exist?(destination)
+  if File.exist?(destination) && File.size(destination) == http_length
     log("skipping #{saved_name} since already present")
     return
+  elsif File.exist?(destination)
+    log("cleaning incomplete #{saved_name}")
+    File.unlink(destination)
   end
 
   f = open(destination, 'w')
